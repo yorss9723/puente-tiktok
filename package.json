@@ -1,12 +1,18 @@
 {
-"name": "puente-tiktok",
-"version": "1.0.0",
+"name": "puente-tiktok-live",
+"version": "2.5.0",
+"description": "Puente WebSocket actualizado para TikTok LIVE (CINE MATCH LIVE)",
 "type": "module",
 "main": "server.js",
+"engines": {
+"node": ">=20.0.0"
+},
 "scripts": {
 "start": "node server.js"
 },
 "dependencies": {
+"cors": "^2.8.5",
+"express": "^4.21.2",
 "tiktok-live-connector": "^2.5.0",
 "ws": "^8.18.0"
 }
