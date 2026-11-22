@@ -12,7 +12,7 @@ import {
 const PORT = process.env.PORT || 3000;
 const EULERSTREAM_API_KEY = (process.env.EULERSTREAM_API_KEY || "").trim();
 
-// Configurar la API Key gratuita de EulerStream (requerida por tiktok-live-connector v2.5+)
+// Configurar la API Key gratuita de EulerStream
 if (EULERSTREAM_API_KEY && SignConfig) {
   SignConfig.apiKey = EULERSTREAM_API_KEY;
 }
@@ -24,7 +24,7 @@ app.use(cors());
 app.get("/", (req, res) => {
   res.status(200).json({
     ok: true,
-    service: "Puente TikTok Live v2.5 activo",
+    service: "Puente TikTok Live v2.5.1 activo",
     node: process.version,
     eulerKeyConfigured: Boolean(EULERSTREAM_API_KEY),
   });
@@ -141,7 +141,7 @@ wss.on("connection", (ws) => {
           event: "error",
           data: {
             message:
-              "Falta configurar EULERSTREAM_API_KEY en Render (Variables de entorno). Crea tu clave gratis en eulerstream.com.",
+              "Falta configurar EULERSTREAM_API_KEY en Render (Variables de entorno).",
           },
         });
         return;
@@ -150,11 +150,16 @@ wss.on("connection", (ws) => {
       cleanupTikTok();
       currentUser = cleanUser;
 
+      // Configuración compatible 100% con el plan gratuito Community de EulerStream
+      // (sin enableExtendedGiftInfo ni fetchRoomInfoOnConnect que piden plan Business)
       const options = {
         signApiKey: EULERSTREAM_API_KEY,
         processInitialData: false,
-        enableExtendedGiftInfo: true,
-        fetchRoomInfoOnConnect: true,
+        enableExtendedGiftInfo: false,
+        fetchRoomInfoOnConnect: false,
+        requestOptions: {
+          timeout: 15000,
+        },
       };
 
       const conn = new TikTokLiveConnection(cleanUser, options);
@@ -234,13 +239,15 @@ wss.on("connection", (ws) => {
         });
       });
 
-      // Errores en tiempo real
+      // Errores en tiempo real (filtrando avisos secundarios no críticos)
       conn.on(ControlEvent.ERROR, (err) => {
         if (tiktokConn !== conn) return;
         const rawErr = err?.info || err?.message || String(err || "Error de conexión");
+        const errText = String(rawErr);
+        if (/fetch room gifts/i.test(errText)) return;
         sendSafe({
           event: "error",
-          data: { message: String(rawErr).slice(0, 180) },
+          data: { message: errText.slice(0, 180) },
         });
       });
 
@@ -280,6 +287,6 @@ wss.on("connection", (ws) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`Puente TikTok LIVE v2.5 escuchando en puerto ${PORT}`);
+  console.log(`Puente TikTok LIVE v2.5.1 escuchando en puerto ${PORT}`);
   console.log(`EulerStream API Key configurada: ${Boolean(EULERSTREAM_API_KEY)}`);
 });
